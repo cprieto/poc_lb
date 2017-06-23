@@ -7,13 +7,16 @@ services:
         ports:
             - "8080:8080"
             - "80:80"
-        command: --docker --docker.domain=docker.localhost --logLevel=DEBUG
+        command: --web --docker --docker.domain=docker.localhost --logLevel=DEBUG
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - /dev/null:/traefik.toml
 
     whoami:
-        image: emilevauge/whoami
+        build:
+            context: .
         labels:
             - "traefik.backend=whoami"
+            - "traefik.backend.healthcheck.path=/health"
+            - "traefik.backend.healthcheck.interval=5s"
             - "traefik.frontend.rule=Host:whoami.example.org"

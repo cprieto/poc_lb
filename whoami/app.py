@@ -1,5 +1,5 @@
 from flask import Flask, abort
-import socket, time, logging, sys
+import socket, time, logging, sys, threading
 
 app = Flask(__name__)
 Fail = ''
@@ -34,12 +34,28 @@ def fail():
     app.logger.warning('Next request to %s will fail with 404', hostname)
     return "next request to http://{hostname}/health will fail with 404".format(hostname=hostname)
 
+def socket_health():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((hostname, 2323))
+    server.listen(1)
+    print "TCP healthcheck listening at {}:{}".format(hostname, 2323)
+    while Fail == '':
+        (conn, addr) = server.accept()
+        conn.send("You are healthy!\n".format(Fail))
+        conn.close()
+    server.shutdown(socket.SHUT_RDWR)
+    server.close()
+
 if __name__ == '__main__':
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
 
     try:
+        t = threading.Thread(target=socket_health)
+        t.daemon = True
+        t.start()
+
         app.run(host='0.0.0.0', port=80)
     except KeyboardInterrupt:
         app.stop()
