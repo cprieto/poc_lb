@@ -1,8 +1,8 @@
-from flask import Flask, make_response
+from flask import Flask, abort
 import socket, time, logging, sys
 
 app = Flask(__name__)
-Fail = False
+Fail = ''
 hostname = socket.gethostname()
 
 @app.route("/")
@@ -11,18 +11,28 @@ def hello():
 
 @app.route("/health")
 def health():
-    if Fail:
+    if Fail == 'Delay':
         app.logger.warning("Delaying response to %s", hostname)
         time.sleep(7)
-        
-    return ""
+    elif Fail == '404':
+        app.logger.warning("Failing %s with 404", hostname)
+        abort(404)
+
+    return Fail
 
 @app.route("/delay")
-def fail():
+def delay():
     global Fail
-    Fail = True
+    Fail = 'Delay'
     app.logger.warning('Next request to %s will be delayed', hostname)
     return "next request to http://{hostname}/health will be delayed 7 seconds".format(hostname=hostname)
+
+@app.route("/fail")
+def fail():
+    global Fail
+    Fail = '404'
+    app.logger.warning('Next request to %s will fail with 404', hostname)
+    return "next request to http://{hostname}/health will fail with 404".format(hostname=hostname)
 
 if __name__ == '__main__':
     handler = logging.StreamHandler(sys.stdout)
