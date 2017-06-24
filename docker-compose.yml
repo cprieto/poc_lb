@@ -17,4 +17,4 @@ services:
             context: .
         labels:
             - "traefik.backend=whoami"
-            - "traefik.backend.healthcheck.path=/health"
+            - "traefik.frontend.rule=Host:whoami.example.org"
